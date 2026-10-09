@@ -1,0 +1,66 @@
+{
+  "all_pass": true,
+  "results": [
+    {
+      "check": "raw rows read == rows generated",
+      "actual": 10648792,
+      "expected": 10648792,
+      "pass": true
+    },
+    {
+      "check": "quarantined rows == injected malformed rows",
+      "actual": 21396,
+      "expected": 21396,
+      "pass": true
+    },
+    {
+      "check": "null_user_id",
+      "actual": 7066,
+      "expected": 7066,
+      "pass": true
+    },
+    {
+      "check": "invalid_event_type",
+      "actual": 7208,
+      "expected": 7208,
+      "pass": true
+    },
+    {
+      "check": "future_timestamp",
+      "actual": 7122,
+      "expected": 7122,
+      "pass": true
+    },
+    {
+      "check": "clean rows == valid distinct events",
+      "actual": 10574791,
+      "expected": 10574791,
+      "pass": true
+    },
+    {
+      "check": "clean event_ids are unique",
+      "actual": 10574791,
+      "expected": 10574791,
+      "pass": true
+    },
+    {
+      "check": "duplicates removed == injected duplicate deliveries",
+      "actual": 52605,
+      "expected": 52605,
+      "pass": true
+    },
+    {
+      "check": "clean rows per event_date == expected for ALL days",
+      "actual": true,
+      "expected": true,
+      "pass": true
+    },
+    {
+      "check": "content rows == generated",
+      "actual": 110735,
+      "expected": 110735,
+      "pass": true
+    }
+  ],
+  "note": "SYNTHETIC data with injected ground truth"
+}

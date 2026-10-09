@@ -1,0 +1,12 @@
+data/
+*.parquet
+.venv/
+__pycache__/
+.pytest_cache/
+.env
+logs/
+target/
+dbt_packages/
+
+.DS_Store
+dbt/.user.yml

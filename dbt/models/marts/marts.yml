@@ -1,0 +1,57 @@
+version: 2
+
+models:
+  - name: mart_daily_growth
+    description: >
+      Product-growth table, one row per event date: DAU, new users, event volume, content creation rate and
+      creator share. is_provisional marks dates still inside the late-arrival window.
+    columns:
+      - name: event_date
+        data_tests: [not_null, unique]
+      - name: dau
+        data_tests: [not_null, {value_between: {min_value: 1}}]
+      - name: content_creation_rate
+        data_tests: [{value_between: {min_value: 0, max_value: 5}}]
+      - name: creator_share_of_dau
+        data_tests: [{value_between: {min_value: 0, max_value: 1}}]
+
+  - name: mart_retention
+    description: Day-1 and day-7 retention by signup cohort (complete cohorts only).
+    columns:
+      - name: cohort_date
+        data_tests: [not_null, unique]
+      - name: d1_retention
+        data_tests: [{value_between: {min_value: 0, max_value: 1}}]
+      - name: d7_retention
+        data_tests: [{value_between: {min_value: 0, max_value: 1}}]
+
+  - name: int_creator_daily_series
+    description: Dense creator x day engagement series used by the alert detector.
+    data_tests:
+      - unique_combination: {columns: [creator_id, metric_date]}
+
+  - name: mart_creator_engagement_alerts
+    description: >
+      Creator engagement-decline alerts, one row per creator per day on which every one of the last 3 days was at or
+      below 50% of the preceding 14-day average (baseline of at least 20 events/day). Only complete days are scored.
+    data_tests:
+      - unique_combination: {columns: [creator_id, alert_date]}
+    columns:
+      - name: creator_id
+        data_tests: [not_null]
+      - name: drop_pct
+        data_tests: [{value_between: {min_value: 0.5, max_value: 1}}]
+
+  - name: mart_creator_alert_summary
+    description: One row per creator that has triggered an alert, with first alert date, severity and current status.
+    columns:
+      - name: creator_id
+        data_tests: [not_null, unique]
+      - name: severity
+        data_tests:
+          - accepted_values: {values: [high, critical]}
+
+  - name: mart_community_engagement_alerts
+    description: Community-level engagement-decline alerts (same detector, community thresholds).
+    data_tests:
+      - unique_combination: {columns: [community_id, alert_date]}

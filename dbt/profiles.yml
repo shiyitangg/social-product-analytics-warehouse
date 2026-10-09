@@ -1,0 +1,13 @@
+social_warehouse:
+  target: dev
+  outputs:
+    dev:
+      type: postgres
+      host: "{{ env_var('WAREHOUSE_HOST', 'localhost') }}"
+      port: "{{ env_var('WAREHOUSE_PORT', '5432') | as_number }}"
+      dbname: "{{ env_var('WAREHOUSE_DB', 'warehouse') }}"
+      user: "{{ env_var('WAREHOUSE_USER', 'wh') }}"
+      password: "{{ env_var('WAREHOUSE_PASSWORD', 'wh') }}"
+      schema: analytics
+      threads: 2
+      connect_timeout: 30

@@ -1,0 +1,16 @@
+version: 2
+models:
+  - name: stg_events
+    description: Typed pass-through of raw.events (the lake already guarantees valid, de-duplicated events).
+    columns:
+      - name: event_id
+        data_tests: [not_null, unique]
+  - name: stg_user_snapshots
+    description: Daily user attribute snapshots.
+  - name: stg_content
+    description: Content metadata, one row per content_id (latest delivery wins).
+    columns:
+      - name: content_id
+        data_tests: [not_null, unique]
+  - name: stg_ingest_stats
+    description: Per-ingest-date counters from the Spark incremental job, with the reject breakdown parsed to JSONB.

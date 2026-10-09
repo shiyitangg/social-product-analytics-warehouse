@@ -1,0 +1,58 @@
+name: social_warehouse
+version: "1.0.0"
+config-version: 2
+profile: social_warehouse
+
+model-paths: ["models"]
+seed-paths: ["seeds"]
+macro-paths: ["macros"]
+test-paths: ["tests"]
+target-path: "target"
+clean-targets: ["target", "dbt_packages"]
+
+vars:
+  # Incremental fact models re-process the trailing N event dates on every run. Events can arrive up to
+  # max_lag_days late (enforced upstream by the Spark job's `too_late` rule), so lookback = max_lag + 1.
+  max_lag_days: 5
+  lookback_days: 6
+  # Backfill: dbt run --vars '{reprocess_from_date: "2026-08-10"}' rebuilds facts from that date onward.
+  reprocess_from_date: null
+  # Creator engagement-decline alert: ALL of the last `recent_days` days are <= ratio x the mean of the
+  # `baseline_days` days before them, and that baseline is at least min_baseline events/day.
+  alert_recent_days: 3
+  alert_baseline_days: 14
+  alert_min_baseline: 20
+  alert_ratio: 0.5
+  # Same detector on communities (aggregates are smoother, so a milder ratio and a higher volume floor).
+  community_alert_min_baseline: 500
+  community_alert_ratio: 0.8
+
+models:
+  social_warehouse:
+    staging:
+      +materialized: view
+      +schema: staging
+    core:
+      +materialized: table
+      +schema: core
+      +pre-hook: "set work_mem = '128MB'"
+    marts:
+      +materialized: table
+      +schema: marts
+      +pre-hook: "set work_mem = '128MB'"
+    monitoring:
+      +materialized: table
+      +schema: monitoring
+    evaluation:
+      +materialized: table
+      +schema: evaluation
+
+seeds:
+  social_warehouse:
+    +schema: evaluation
+    planted_creator_declines:
+      +column_types:
+        creator_id: bigint
+        onset_date: date
+        decline_factor: numeric
+        popularity_rank: integer

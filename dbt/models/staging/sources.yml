@@ -1,0 +1,52 @@
+version: 2
+
+sources:
+  - name: raw
+    description: >
+      Tables loaded from the clean data lake (Parquet in object storage) by `src/load_postgres.py`.
+      The lake already holds validated, de-duplicated data; these tables are a faithful relational copy.
+    tables:
+      - name: events
+        description: One row per distinct valid event (first delivery kept). Replaced one event_date at a time.
+        columns:
+          - name: event_id
+            data_tests: [not_null, unique]
+          - name: event_ts
+            data_tests: [not_null]
+          - name: user_id
+            data_tests: [not_null]
+          - name: event_type
+            data_tests:
+              - accepted_values:
+                  values: [app_open, content_view, like, comment, share, follow, content_create]
+          - name: event_date
+            data_tests: [not_null]
+      - name: users_snapshot
+        description: Daily full snapshot of user attributes. Source of the SCD Type 2 dimension.
+        columns:
+          - name: user_id
+            data_tests: [not_null]
+          - name: snapshot_date
+            data_tests: [not_null]
+        data_tests:
+          - unique_combination:
+              columns: [snapshot_date, user_id]
+      - name: content
+        description: Content metadata, appended daily by ingest date.
+        columns:
+          - name: content_id
+            data_tests: [not_null]
+          - name: creator_id
+            data_tests: [not_null]
+
+  - name: ops
+    description: Pipeline bookkeeping written by the loader.
+    tables:
+      - name: loaded_partitions
+        description: Which lake partitions are loaded, with row count + content checksum + load time.
+        loaded_at_field: loaded_at
+        freshness:
+          warn_after: {count: 36, period: hour}
+          error_after: {count: 7, period: day}
+      - name: ingest_stats
+        description: One row per processed ingest date (volumes, rejects, duplicates, late rows).

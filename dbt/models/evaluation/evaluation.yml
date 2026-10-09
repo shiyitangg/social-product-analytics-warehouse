@@ -1,0 +1,22 @@
+version: 2
+
+seeds:
+  - name: planted_creator_declines
+    description: >
+      SYNTHETIC ground truth written by the data generator: which creators had their engagement artificially reduced,
+      from which date and by what factor. Used only to score the alert; no pipeline model reads it.
+    columns:
+      - name: creator_id
+        data_tests: [not_null, unique]
+
+models:
+  - name: eval_creator_alert_detail
+    description: Per-creator outcome of the alert against the planted declines.
+    columns:
+      - name: creator_id
+        data_tests: [not_null, unique]
+      - name: outcome
+        data_tests:
+          - accepted_values: {values: [true_positive, early_alert, false_positive, missed]}
+  - name: eval_creator_alert_metrics
+    description: One row - alert precision, recall and median detection delay versus the planted ground truth.

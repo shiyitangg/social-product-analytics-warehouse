@@ -1,0 +1,31 @@
+version: 2
+
+models:
+  - name: mon_pipeline_state
+    description: One row - how far ingestion has progressed and the last complete event date.
+    columns:
+      - name: complete_through
+        data_tests: [not_null]
+
+  - name: mon_ingest_quality
+    description: >
+      Per ingest date - reject, null-user, duplicate and late-row rates plus volume versus the prior 7 days, with flags.
+    columns:
+      - name: ingest_date
+        data_tests: [not_null, unique]
+
+  - name: mon_metric_anomalies
+    description: Z-score anomaly detection for DAU, event volume, posts created and content creation rate.
+    data_tests:
+      - unique_combination: {columns: [event_date, metric_name]}
+
+  - name: mon_data_quality_checks
+    description: >
+      The observability table - one row per check with observed value, thresholds and pass/warn/fail status.
+      The orchestrator blocks publication when any row has status = 'fail'.
+    columns:
+      - name: check_name
+        data_tests: [not_null, unique]
+      - name: status
+        data_tests:
+          - accepted_values: {values: [pass, warn, fail]}
