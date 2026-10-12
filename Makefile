@@ -1,8 +1,9 @@
-.PHONY: build up reset upload ingest verify idempotency load dbt-seed dbt-run dbt-test dbt-freshness dbt-docs dbt-backfill airflow-up airflow-logs airflow-check airflow-run airflow-run-flaky airflow-backfill batch-bad batch-good sql test-spark down
+.PHONY: export-bi build up reset upload ingest verify idempotency load dbt-seed dbt-run dbt-test dbt-freshness dbt-docs dbt-backfill airflow-up airflow-logs airflow-check airflow-run airflow-run-flaky airflow-backfill batch-bad batch-good sql test-spark down
 
 RUN  = docker compose run --rm runner
 PY   = /opt/venvs/spark/bin/python
 DBT  = /opt/venvs/dbt/bin/dbt
+PYDBT = /opt/venvs/dbt/bin/python
 DBTA = --project-dir dbt --profiles-dir dbt
 
 build:
@@ -70,3 +71,7 @@ test-spark:
 	$(RUN) $(PY) -m pytest -q tests
 down:
 	docker compose down
+
+# --- dashboard layer: schema `bi` (built by `make dbt-run`) -> CSV files in ./bi/export for Power BI / Tableau ---
+export-bi:
+	$(RUN) $(PYDBT) src/export_bi.py

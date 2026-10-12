@@ -43,6 +43,9 @@ models:
     monitoring:
       +materialized: table
       +schema: monitoring
+    bi:
+      +materialized: table
+      +schema: bi
     evaluation:
       +materialized: table
       +schema: evaluation

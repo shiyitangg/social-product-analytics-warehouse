@@ -50,3 +50,7 @@ sources:
           error_after: {count: 7, period: day}
       - name: ingest_stats
         description: One row per processed ingest date (volumes, rejects, duplicates, late rows).
+      - name: publish_log
+        description: One row per orchestrated run that passed the quality gate and published (written by the Airflow publish task).
+      - name: pipeline_alerts
+        description: One row per failed task attempt, including retries and quality-gate blocks (written by the Airflow failure callback).

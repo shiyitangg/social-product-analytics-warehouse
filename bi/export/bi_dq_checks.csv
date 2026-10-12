@@ -1,0 +1,12 @@
+check_name,table_name,category,observed,warn_above,fail_above,status,checked_at
+dim_users.users_without_exactly_one_current_row,dim_users,integrity,0.000000,0,0,pass,2026-10-12 21:49:34.317628+00
+fct_events.duplicate_event_rate,fct_events,duplicate rate,0.000000,0,0,pass,2026-10-12 21:49:34.317628+00
+fct_events.null_creator_rate_on_content_events,fct_events,null rate,0.000000,0.0005,0.01,pass,2026-10-12 21:49:34.317628+00
+fct_events.null_user_key_rate,fct_events,null rate,0.000000,0,0,pass,2026-10-12 21:49:34.317628+00
+freshness.hours_since_last_load,raw.events,freshness,91.636258,36,168,warn,2026-10-12 21:49:34.317628+00
+ingest.max_duplicate_rate_last_7_batches,ops.ingest_stats,duplicate rate,0.001893,0.01,0.05,pass,2026-10-12 21:49:34.317628+00
+ingest.max_null_user_rate_last_7_batches,ops.ingest_stats,null rate,0.000947,0.003,0.01,pass,2026-10-12 21:49:34.317628+00
+ingest.max_reject_rate_last_7_batches,ops.ingest_stats,null rate,0.002524,0.005,0.01,pass,2026-10-12 21:49:34.317628+00
+mart_daily_growth.missing_complete_days,mart_daily_growth,completeness,0.000000,0,0,pass,2026-10-12 21:49:34.317628+00
+warehouse.fct_events_vs_raw_row_gap,fct_events,completeness,0.000000,0,0,pass,2026-10-12 21:49:34.317628+00
+warehouse.raw_vs_lake_row_gap,raw.events,completeness,0.000000,0,0,pass,2026-10-12 21:49:34.317628+00

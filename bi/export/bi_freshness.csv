@@ -1,0 +1,2 @@
+latest_event_date,complete_through,provisional_days,latest_ingest_date,last_loaded_at,warehouse_event_rows,hours_since_last_load,freshness_warn_hours,freshness_fail_hours,freshness_status,checks_pass,checks_warn,checks_fail,snapshot_at
+2026-09-10,2026-09-09,1,2026-09-14,2026-10-09 02:11:23.790244+00,10873190,91.636258,36,168,warn,10,1,0,2026-10-12 21:52:53.73852+00

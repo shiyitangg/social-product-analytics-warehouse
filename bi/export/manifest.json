@@ -1,0 +1,41 @@
+{
+  "exported_at": "2026-10-12T22:00:19+00:00",
+  "tables": {
+    "bi_creator_alert_series": 560,
+    "bi_creator_alerts": 14,
+    "bi_daily_activity": 492,
+    "bi_daily_content": 23754,
+    "bi_dim_community": 200,
+    "bi_dim_content_type": 3,
+    "bi_dim_date": 46,
+    "bi_dim_device": 3,
+    "bi_dim_segment": 4,
+    "bi_dq_checks": 11,
+    "bi_dq_ingest_daily": 45,
+    "bi_dq_reject_reasons": 129,
+    "bi_freshness": 1,
+    "bi_pipeline_runs": 45,
+    "bi_retention_cohorts": 120,
+    "bi_weekly_active": 28
+  },
+  "quality_checks": {
+    "pass": 10,
+    "warn": 1,
+    "fail": 0
+  },
+  "key_values": {
+    "latest_complete_day": "2026-09-09",
+    "dau_on_latest_complete_day": 23880.0,
+    "posts_created_complete_days": 66174.0,
+    "d1_retention_overall": 0.6544,
+    "d7_retention_overall": 0.3497,
+    "latest_full_week_start": "2026-08-31",
+    "wau_latest_full_week": 54880.0,
+    "interactions_per_view_complete_days": 0.14697,
+    "creators_alerted": 14,
+    "creators_alerted_critical": 2,
+    "quarantined_rows_total": 21801.0,
+    "quarantine_rate_overall": 0.00199,
+    "hours_since_last_load": 91.6
+  }
+}

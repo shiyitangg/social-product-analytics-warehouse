@@ -1,0 +1,72 @@
+// Power BI measures for the Social Product Analytics Warehouse dashboard.
+// Create them in a table called "_Measures" (Modeling > New table > _Measures = {1}) or on the fact tables.
+// Rule: ratios are ALWAYS built from sums (DIVIDE of SUMs), never by averaging a ratio column.
+
+// ------------------------------------------------------------------ KPI page
+DAU = CALCULATE ( SUM ( bi_daily_activity[active_users] ), bi_daily_activity[is_provisional] = FALSE () )
+
+Avg DAU = AVERAGEX ( VALUES ( bi_daily_activity[event_date] ), [DAU] )
+
+New Users = CALCULATE ( SUM ( bi_daily_activity[new_users] ), bi_daily_activity[is_provisional] = FALSE () )
+
+WAU = CALCULATE ( SUM ( bi_weekly_active[wau] ), bi_weekly_active[is_full_week] = TRUE () )
+
+WAU (latest full week) =
+VAR w = CALCULATE ( MAX ( bi_weekly_active[week_start_date] ), bi_weekly_active[is_full_week] = TRUE () )
+RETURN CALCULATE ( [WAU], bi_weekly_active[week_start_date] = w )
+
+Posts Created = CALCULATE ( SUM ( bi_daily_activity[posts_created] ), bi_daily_activity[is_provisional] = FALSE () )
+
+Content Views = CALCULATE ( SUM ( bi_daily_activity[content_views] ), bi_daily_activity[is_provisional] = FALSE () )
+
+Interactions = CALCULATE ( SUM ( bi_daily_activity[interactions] ), bi_daily_activity[is_provisional] = FALSE () )
+
+Interaction Rate = DIVIDE ( [Interactions], [Content Views] )
+
+Content Creation Rate = DIVIDE ( [Posts Created], [DAU] )          // posts per active user-day
+
+Creator Share of DAU =
+DIVIDE ( CALCULATE ( SUM ( bi_daily_activity[creators_posting] ), bi_daily_activity[is_provisional] = FALSE () ), [DAU] )
+
+D1 Retention = DIVIDE ( SUM ( bi_retention_cohorts[retained_d1] ), SUM ( bi_retention_cohorts[d1_eligible] ) )
+
+D7 Retention = DIVIDE ( SUM ( bi_retention_cohorts[retained_d7] ), SUM ( bi_retention_cohorts[d7_eligible] ) )
+
+// ------------------------------------------------------------------ Content page
+Views (content) = SUM ( bi_daily_content[views] )
+
+Posts (content) = SUM ( bi_daily_content[posts_created] )
+
+Interaction Rate (content) = DIVIDE ( SUM ( bi_daily_content[interactions] ), SUM ( bi_daily_content[views] ) )
+
+// ------------------------------------------------------------------ Creator alert page
+Creators Alerted = COUNTROWS ( bi_creator_alerts )
+
+Critical Alerts = CALCULATE ( COUNTROWS ( bi_creator_alerts ), bi_creator_alerts[severity] = "critical" )
+
+Avg Drop at Alert = AVERAGE ( bi_creator_alerts[drop_pct_at_alert] )
+
+// ------------------------------------------------------------------ Data-quality page
+Rows Received = SUM ( bi_dq_ingest_daily[rows_in] )
+
+Quarantined Rows = SUM ( bi_dq_ingest_daily[quarantined_rows] )
+
+Quarantine Rate = DIVIDE ( [Quarantined Rows], [Rows Received] )
+
+Failing Checks = SUM ( bi_freshness[checks_fail] )
+
+Warning Checks = SUM ( bi_freshness[checks_warn] )
+
+Hours Since Last Load = SUM ( bi_freshness[hours_since_last_load] )     // table has one row
+
+Runs Published =
+CALCULATE ( COUNTROWS ( bi_pipeline_runs ), bi_pipeline_runs[run_status] IN { "published", "published after retry" } )
+
+Runs Failed = CALCULATE ( COUNTROWS ( bi_pipeline_runs ), bi_pipeline_runs[run_status] = "failed" )
+
+Data Status Banner =
+IF (
+    [Failing Checks] > 0,
+    "ATTENTION: " & [Failing Checks] & " data-quality check(s) failing",
+    "All checks within thresholds (" & SUM ( bi_freshness[checks_pass] ) & " pass, " & [Warning Checks] & " warn)"
+)

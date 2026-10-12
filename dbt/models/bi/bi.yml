@@ -1,0 +1,130 @@
+version: 2
+
+# Dashboard-serving layer ("bi" schema). Facts are additive: every ratio is computed in the BI tool from sums.
+# The singular tests in dbt/tests/assert_bi_*.sql reconcile these tables to the existing marts.
+
+models:
+  - name: bi_dim_date
+    columns:
+      - name: date_day
+        data_tests: [not_null, unique]
+  - name: bi_dim_segment
+    columns:
+      - name: segment
+        data_tests: [not_null, unique]
+  - name: bi_dim_device
+    columns:
+      - name: device
+        data_tests: [not_null, unique]
+  - name: bi_dim_content_type
+    columns:
+      - name: content_type
+        data_tests: [not_null, unique]
+  - name: bi_dim_community
+    columns:
+      - name: community_id
+        data_tests: [not_null, unique]
+
+  - name: bi_daily_activity
+    description: User activity per day x segment x device (additive).
+    data_tests:
+      - unique_combination:
+          columns: [event_date, segment, device]
+    columns:
+      - name: event_date
+        data_tests:
+          - not_null
+          - relationships: {to: "ref('bi_dim_date')", field: date_day}
+      - name: segment
+        data_tests:
+          - not_null
+          - relationships: {to: "ref('bi_dim_segment')", field: segment}
+      - name: device
+        data_tests:
+          - not_null
+          - relationships: {to: "ref('bi_dim_device')", field: device}
+      - name: active_users
+        data_tests: [{value_between: {min_value: 0}}]
+
+  - name: bi_weekly_active
+    description: Weekly active users per ISO week x segment (each user once per week).
+    data_tests:
+      - unique_combination:
+          columns: [week_start_date, segment]
+    columns:
+      - name: week_start_date
+        data_tests:
+          - not_null
+          - relationships: {to: "ref('bi_dim_date')", field: date_day}
+      - name: segment
+        data_tests:
+          - not_null
+          - relationships: {to: "ref('bi_dim_segment')", field: segment}
+
+  - name: bi_daily_content
+    description: Content activity per day x community x content type (additive).
+    data_tests:
+      - unique_combination:
+          columns: [event_date, community_id, content_type]
+    columns:
+      - name: event_date
+        data_tests:
+          - not_null
+          - relationships: {to: "ref('bi_dim_date')", field: date_day}
+      - name: community_id
+        data_tests:
+          - not_null
+          - relationships: {to: "ref('bi_dim_community')", field: community_id}
+      - name: content_type
+        data_tests:
+          - not_null
+          - relationships: {to: "ref('bi_dim_content_type')", field: content_type}
+
+  - name: bi_retention_cohorts
+    description: Day-1 / day-7 retention by signup cohort x device, with eligibility columns for complete cohorts.
+    data_tests:
+      - unique_combination:
+          columns: [cohort_date, device]
+    columns:
+      - name: cohort_date
+        data_tests:
+          - not_null
+          - relationships: {to: "ref('bi_dim_date')", field: date_day}
+      - name: device
+        data_tests:
+          - not_null
+          - relationships: {to: "ref('bi_dim_device')", field: device}
+
+  - name: bi_creator_alerts
+    columns:
+      - name: creator_id
+        data_tests: [not_null, unique]
+      - name: severity
+        data_tests:
+          - accepted_values: {values: [critical, high]}
+
+  - name: bi_creator_alert_series
+    data_tests:
+      - unique_combination:
+          columns: [creator_id, metric_date]
+
+  - name: bi_dq_checks
+    columns:
+      - name: check_name
+        data_tests: [not_null, unique]
+      - name: status
+        data_tests:
+          - accepted_values: {values: [pass, warn, fail]}
+
+  - name: bi_dq_ingest_daily
+    columns:
+      - name: ingest_date
+        data_tests: [not_null, unique]
+
+  - name: bi_pipeline_runs
+    columns:
+      - name: ingest_date
+        data_tests: [not_null, unique]
+      - name: run_status
+        data_tests:
+          - accepted_values: {values: ["failed", "published after retry", "published", "ingested, no run"]}
