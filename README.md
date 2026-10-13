@@ -14,8 +14,9 @@ flowchart LR
     LAKE --> LD[Idempotent loader<br/>partition fingerprints]
     LD --> PG[(PostgreSQL 16<br/>raw schema)]
     PG --> DBT[dbt: staging, core, marts,<br/>monitoring, evaluation]
-    DBT --> GATE{quality gate<br/>83 dbt tests + checks}
+    DBT --> GATE{quality gate<br/>dbt tests + checks}
     GATE -- all pass --> PUB[(published schema)]
+    DBT --> BI[bi schema<br/>16 tested tables] --> TAB[Tableau Public<br/>4 dashboards]
     GATE -- any fail --> ALERT[ops.pipeline_alerts]
     AF[Airflow DAG<br/>retries, backfill] -. orchestrates .-> SP
     AF -. orchestrates .-> LD
@@ -36,6 +37,8 @@ flowchart LR
 5. **Orchestrates** the daily run with Airflow: retries, a backfill path, a quality gate before anything is
    published, and failure alerts that record the real cause.
 6. **Evaluates** a creator engagement-decline alert against the planted ground truth (precision, recall, delay).
+7. **Serves** 16 tested `bi` tables to a four-page Tableau Public workbook (KPIs, content performance, creator alerts,
+   data quality and pipeline status); the headline numbers are reconciled to `bi/export/manifest.json`.
 
 ## Measured results
 
@@ -44,12 +47,13 @@ flowchart LR
 | Raw input | 10,648,792 event rows (10,574,791 distinct valid events; 52,605 duplicate deliveries; 21,396 malformed rows; 317,436 late-arriving events), 45 ingest dates |
 | Lake reconciliation vs. injected truth | 10 / 10 checks pass (`reports/lake_reconciliation.json`) |
 | Re-run and order independence (`make idempotency`) | Re-processing an ingest date leaves `clean_events` unchanged; processing a range newest-first into a scratch lake gives the same `clean_events` as oldest-first |
-| dbt | 24 models (4 views, 16 tables, 4 incremental), 1 seed, 83 data tests: **83 / 83 pass** |
+| dbt | 40 models (24 warehouse models + 16 `bi` tables), 1 seed, 136 data tests: **136 / 136 pass** (83 on the warehouse models, 53 on the `bi` layer) |
 | SCD Type 2 | 70,000 users produce 102,641 `dim_users` versions |
 | Full dbt build time | 122 s for ~10.6M events on a laptop |
 | Airflow daily run | 8 tasks, about 4.5 minutes per ingest date |
 | Retry drill | `check_raw_landed` fails once on purpose and succeeds on its automatic retry |
 | Quality-gate drill | A batch with 5.89% rejected rows (18,051 null `user_id`) is stopped at the Spark step; nothing downstream runs and `published.*` is untouched. A clean replacement batch then publishes normally |
+| BI layer | 16 `bi` tables exported to CSV (`make export-bi`); 4-page Tableau Public workbook, KPIs checked against `manifest.json` and against the CSVs from the command line |
 | Backfill drill | Re-processing 2026-08-10 with `reprocess` rebuilds the facts in 8 min and leaves `fct_events` at exactly 10,873,190 rows (before = after) |
 
 ## Creator engagement-decline alert: evaluation
@@ -82,6 +86,21 @@ late events can no longer arrive are scored.
 - Both false alarms are low-volume creators (about 21 events/day on average, right above the 20/day floor), where day-to-day noise is large relative to the signal. The three misses have decline factors of 0.43-0.51 (engagement falls to roughly half), close to the 0.5 line; I did not investigate them further, but with only three days in the window, ordinary noise keeping one day above the line is the likely cause.
 - A community-level variant of the same detector exists, but it raised no alerts on this data and is **not evaluated**.
 
+## Dashboards (Tableau Public)
+
+Four pages in `bi/tableau/social_warehouse_dashboard.twbx`, built from the exported `bi` tables. Details, reconciliation and
+limits are in [docs/DASHBOARD.md](docs/DASHBOARD.md). The workbook is saved locally and not published.
+
+| | |
+|---|---|
+| <img src="docs/images/1_product_kpis.png" width="100%"> | <img src="docs/images/2_content_performance.png" width="100%"> |
+| 1. Product KPIs (DAU, WAU, retention, filters by segment, device, date) | 2. Content performance (content type, top communities) |
+| <img src="docs/images/3_creator_alerts.png" width="100%"> | <img src="docs/images/4_data_quality.png" width="100%"> |
+| 3. Creator engagement-decline alerts | 4. Data quality and pipeline status |
+
+These charts show synthetic data. Patterns in them (weekly seasonality, similar rates across segments, one dominant
+community) are generator settings, not findings. Freshness on page 4 is a snapshot taken at export time, not a live monitor.
+
 ## Data model
 
 | Layer | Objects | Notes |
@@ -110,7 +129,7 @@ make up                                         # MinIO + PostgreSQL
 make upload && make ingest && make verify       # raw -> lake, reconciles against injected truth
 make idempotency                                # re-run and order-independence experiments
 make load                                       # lake -> PostgreSQL
-make dbt-seed && make dbt-run && make dbt-test  # models and 83 tests
+make dbt-seed && make dbt-run && make dbt-test  # models and tests
 ```
 
 Airflow and the failure drills:
@@ -124,6 +143,14 @@ make batch-good && make airflow-run DATE=2026-09-10  # clean replacement publish
 make airflow-backfill FROM=2026-08-10 TO=2026-08-10  # rebuild facts from a past date
 ```
 
+Dashboard data (after the dbt run):
+
+```bash
+make export-bi                                  # bi/export/*.csv + manifest.json
+```
+
+Then open `bi/tableau/social_warehouse_dashboard.twbx` in Tableau Public.
+
 Inspect results: `docker compose exec postgres psql -U wh -d warehouse`.
 
 ## Limitations
@@ -136,6 +163,9 @@ Inspect results: `docker compose exec postgres psql -U wh -d warehouse`.
   is run through `airflow dags backfill` rather than a live daily schedule; PostgreSQL is one instance.
 - **Slack delivery is not exercised.** Alerts are written to `ops.alert_outbox` and logged; posting to a webhook
   only happens if `SLACK_WEBHOOK_URL` is set, and was not tested here.
+- **Dashboard limits.** The Tableau workbook is a packaged snapshot of the CSV export, saved locally; filters work only
+  within one data source; page 4 freshness is a snapshot; the last four ingest dates are small late-arriving batches, so
+  their quarantine rates are not comparable. See [docs/DASHBOARD.md](docs/DASHBOARD.md).
 - Row-count and fingerprint checks prove the pipeline is consistent with itself and with the generator's
   ground truth; they say nothing about how well it would match a real source system.
 
@@ -149,4 +179,6 @@ docker/     runner / Airflow image
 sql/        warehouse init, alert sensitivity analysis
 tests/      unit tests (generator, validation rules, date-window helpers)
 reports/    lake reconciliation output
+bi/         CSV export of the bi tables, Tableau workbook, DAX measures (reference only)
+docs/       dashboard documentation and screenshots
 ```
