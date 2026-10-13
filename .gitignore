@@ -10,3 +10,6 @@ dbt_packages/
 
 .DS_Store
 dbt/.user.yml
+
+# Tableau temporary files
+.~*
